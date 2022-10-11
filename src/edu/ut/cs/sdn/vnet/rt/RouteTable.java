@@ -1,4 +1,4 @@
-package edu.ut.cs.sdn.vnet.rt;
+package edu.wisc.cs.sdn.vnet.rt;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 
 import net.floodlightcontroller.packet.IPv4;
 
-import edu.ut.cs.sdn.vnet.Iface;
+import edu.wisc.cs.sdn.vnet.Iface;
 
 /**
  * Route table for a router.
@@ -40,7 +40,21 @@ public class RouteTable
 			/*****************************************************************/
 			/* TODO: Find the route entry with the longest prefix match      */
 			
-			return null;
+	        RouteEntry bestMatch = null;
+	        for (RouteEntry entry : this.entries)
+	        {
+	           int maskedDst = ip & entry.getMaskAddress();
+	           int entrySubnet = entry.getDestinationAddress() 
+	               & entry.getMaskAddress();
+	           if (maskedDst == entrySubnet)
+	           {
+	        	   if ((null == bestMatch) 
+	        		   || (entry.getMaskAddress() > bestMatch.getMaskAddress()))
+	        	   { bestMatch = entry; }
+	           }
+	        }
+			
+			return bestMatch;
 			
 			/*****************************************************************/
         }

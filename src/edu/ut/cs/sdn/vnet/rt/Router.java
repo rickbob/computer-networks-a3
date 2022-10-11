@@ -155,6 +155,8 @@ public class Router extends Device {
 
 		// If no entry matched, do nothing
 		if (null == bestMatch) {
+			Ethernet icmpEtherPkt = getICMPPacket((byte) 3, (byte) 0, inIface, ipPacket);
+			sendPacket(icmpEtherPkt, inIface);
 			return;
 		}
 

@@ -162,6 +162,27 @@ public class Router extends Device {
 
 		// Make sure we don't sent a packet back out the interface it came in
 		Iface outIface = bestMatch.getInterface();
+
+		
+		for (Iface routerIface : this.interfaces.values()) {
+			if (routerIface == outIface) {
+				if (ipPacket.getProtocol() == IPv4.PROTOCOL_TCP || ipPacket.getProtocol() == IPv4.PROTOCOL_UDP) {
+					Ethernet icmpEtherPkt = getICMPPacket((byte) 3, (byte) 3, inIface, ipPacket);
+					sendPacket(icmpEtherPkt, inIface);
+				} else if (ipPacket.getProtocol() == IPv4.PROTOCOL_ICMP) {
+					ICMP icmpPacket = (ICMP) ipPacket.getPayload();
+
+					// Check if echo request
+					if (icmpPacket.getIcmpType() == 8) {
+						Ethernet echoReply = buildEchoReply(inIface, ipPacket);
+						sendPacket(echoReply, outIface);
+					}
+				}
+				
+				return;
+			}
+		}
+
 		if (outIface == inIface) {
 			return;
 		}
@@ -178,6 +199,8 @@ public class Router extends Device {
 		// Set destination MAC address in Ethernet header
 		ArpEntry arpEntry = this.arpCache.lookup(nextHop);
 		if (null == arpEntry) {
+			Ethernet icmpEtherPkt = getICMPPacket((byte) 3, (byte) 1, inIface, ipPacket);
+			sendPacket(icmpEtherPkt, inIface);
 			return;
 		}
 		etherPacket.setDestinationMACAddress(arpEntry.getMac().toBytes());
@@ -212,6 +235,32 @@ public class Router extends Device {
 		ether.setPayload(ip);
 		ip.setPayload(icmp);
 		icmp.setPayload(data);
+
+		return ether;
+	}
+
+	private Ethernet buildEchoReply(Iface inIface, IPv4 originalPacket) {
+		Ethernet ether = new Ethernet();
+		ether.setEtherType(Ethernet.TYPE_IPv4);
+		ether.setSourceMACAddress(inIface.getMacAddress().toBytes());
+		ether.setDestinationMACAddress(getICMPDestinationMacAddress(originalPacket, inIface).toBytes());
+
+		IPv4 ip = new IPv4();
+		ip.setTtl((byte) 64);
+		ip.setProtocol(IPv4.PROTOCOL_ICMP);
+		ip.setSourceAddress(originalPacket.getDestinationAddress());
+		ip.setDestinationAddress(originalPacket.getSourceAddress());
+
+		ICMP icmp = new ICMP();
+		icmp.setIcmpType((byte) 0);
+		icmp.setIcmpCode((byte) 0);
+		icmp.resetChecksum();
+
+		ether.setPayload(ip);
+		ip.setPayload(icmp);
+
+		ICMP echoRequest = (ICMP) originalPacket.getPayload();
+		icmp.setPayload(echoRequest.getPayload());
 
 		return ether;
 	}

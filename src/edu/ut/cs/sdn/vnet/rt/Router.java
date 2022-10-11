@@ -174,4 +174,16 @@ public class Router extends Device
         
         this.sendPacket(etherPacket, outIface);
     }
+
+	private Ethernet getICMPPacket(int type, int code) {
+		Ethernet ether = new Ethernet();
+        IPv4 ip = new IPv4();
+        ICMP icmp = new ICMP();
+        Data data = new Data();
+        ether.setPayload(ip);
+        ip.setPayload(icmp);
+        icmp.setPayload(data);
+
+		ether.setEtherType(Ethernet.TYPE_IPv4);
+	}
 }

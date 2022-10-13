@@ -133,12 +133,12 @@ public class Router extends Device {
 			return;
 
 		// Check TTL
-		ipPacket.setTtl((byte) (ipPacket.getTtl() - 1));
-		if (0 == ipPacket.getTtl()) {
+		if (1 == ipPacket.getTtl()) {
 			Ethernet icmpEtherPkt = getICMPPacket((byte) 11, (byte) 0, inIface, ipPacket);
 			sendPacket(icmpEtherPkt, inIface);
 			return;
 		}
+		ipPacket.setTtl((byte) (ipPacket.getTtl() - 1));
 
 		// Reset checksum now that TTL is decremented
 		ipPacket.resetChecksum();

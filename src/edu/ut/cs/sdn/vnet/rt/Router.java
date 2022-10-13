@@ -144,11 +144,11 @@ public class Router extends Device {
 		ipPacket.resetChecksum();
 
 		// Check if packet is destined for one of router's interfaces
-		for (Iface iface : this.interfaces.values()) {
-			if (ipPacket.getDestinationAddress() == iface.getIpAddress()) {
-				return;
-			}
-		}
+		// for (Iface iface : this.interfaces.values()) {
+		// 	if (ipPacket.getDestinationAddress() == iface.getIpAddress()) {
+		// 		return;
+		// 	}
+		// }
 
 		// Do route lookup and forward
 		this.forwardIpPacket(etherPacket, inIface);

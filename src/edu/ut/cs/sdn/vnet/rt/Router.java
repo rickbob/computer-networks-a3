@@ -188,6 +188,8 @@ public class Router extends Device {
 					// Check if echo request
 					if (icmpPacket.getIcmpType() == 8) {
 						Ethernet echoReply = buildEchoReply(inIface, etherPacket);
+						System.out.println("*** -> Sending echo packet: " +
+								echoReply.toString().replace("\n", "\n\t"));
 						sendPacket(echoReply, outIface);
 					}
 				}

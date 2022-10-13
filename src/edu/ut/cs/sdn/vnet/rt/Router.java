@@ -214,6 +214,7 @@ public class Router extends Device {
 		// Set destination MAC address in Ethernet header
 		ArpEntry arpEntry = this.arpCache.lookup(nextHop);
 		if (null == arpEntry) {
+			System.out.println("Here for " + nextHop);
 			Ethernet icmpEtherPkt = getICMPPacket((byte) 3, (byte) 1, inIface, ipPacket);
 			sendPacket(icmpEtherPkt, inIface);
 			return;

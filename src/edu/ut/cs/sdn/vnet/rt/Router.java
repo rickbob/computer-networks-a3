@@ -289,13 +289,17 @@ public class Router extends Device {
 		RouteEntry bestMatch = this.routeTable.lookup(srcAddr);
 
 		// If no entry matched, do nothing
-		if (null == bestMatch)
+		if (null == bestMatch) {
+			System.out.println("bestMatch null");
 			return null;
+		}
 
 		// Make sure we don't sent a packet back out the interface it came in
 		Iface outIface = bestMatch.getInterface();
-		if (outIface == inIface)
+		if (outIface == inIface) {
+			System.out.println("outIface null");
 			return null;
+		}
 
 		// If no gateway, then nextHop is IP destination
 		int nextHop = bestMatch.getGatewayAddress();
@@ -305,8 +309,10 @@ public class Router extends Device {
 
 		// Set destination MAC address in Ethernet header
 		ArpEntry arpEntry = this.arpCache.lookup(nextHop);
-		if (null == arpEntry)
+		if (null == arpEntry) {
+			System.out.println("arpEntry null");
 			return null;
+		}
 
 		return arpEntry.getMac();
 	}

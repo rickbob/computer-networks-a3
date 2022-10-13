@@ -175,6 +175,22 @@ public class Router extends Device {
 			return;
 		}
 
+		// If no gateway, then nextHop is IP destination
+		int nextHop = bestMatch.getGatewayAddress();
+		if (0 == nextHop) {
+			nextHop = dstAddr;
+		}
+
+		// Set destination MAC address in Ethernet header
+		ArpEntry arpEntry = this.arpCache.lookup(nextHop);
+		System.out.println("ARP ENTRY: " + arpEntry);
+		if (null == arpEntry) {
+			System.out.println("Here for " + nextHop);
+			Ethernet icmpEtherPkt = getICMPPacket((byte) 3, (byte) 1, inIface, ipPacket);
+			sendPacket(icmpEtherPkt, inIface);
+			return;
+		}
+
 		// Make sure we don't sent a packet back out the interface it came in
 		Iface outIface = bestMatch.getInterface();
 		for (Iface routerIface : this.interfaces.values()) {
@@ -205,21 +221,6 @@ public class Router extends Device {
 		// Set source MAC address in Ethernet header
 		etherPacket.setSourceMACAddress(outIface.getMacAddress().toBytes());
 
-		// If no gateway, then nextHop is IP destination
-		int nextHop = bestMatch.getGatewayAddress();
-		if (0 == nextHop) {
-			nextHop = dstAddr;
-		}
-
-		// Set destination MAC address in Ethernet header
-		ArpEntry arpEntry = this.arpCache.lookup(nextHop);
-		System.out.println("ARP ENTRY: " + arpEntry);
-		if (null == arpEntry) {
-			System.out.println("Here for " + nextHop);
-			Ethernet icmpEtherPkt = getICMPPacket((byte) 3, (byte) 1, inIface, ipPacket);
-			sendPacket(icmpEtherPkt, inIface);
-			return;
-		}
 		etherPacket.setDestinationMACAddress(arpEntry.getMac().toBytes());
 
 		this.sendPacket(etherPacket, outIface);

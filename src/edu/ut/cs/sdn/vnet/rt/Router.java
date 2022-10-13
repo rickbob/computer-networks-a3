@@ -9,6 +9,9 @@ import net.floodlightcontroller.packet.IPv4;
 import net.floodlightcontroller.packet.MACAddress;
 import net.floodlightcontroller.packet.ICMP;
 import net.floodlightcontroller.packet.Data;
+import net.floodlightcontroller.packet.ARP;
+
+import java.nio.ByteBuffer;
 
 /**
  * @author Aaron Gember-Jacobson and Anubhavnidhi Abhashkumar
@@ -91,17 +94,30 @@ public class Router extends Device {
 			case Ethernet.TYPE_IPv4:
 				this.handleIpPacket(etherPacket, inIface);
 				break;
-			// Ignore all other packet types, for now
+			case Ethernet.TYPE_ARP:
+				this.handleArpPacket(etherPacket, inIface);
+				// Ignore all other packet types, for now
 		}
 
 		/********************************************************************/
 	}
 
+	private void handleArpPacket(Ethernet etherPacket, Iface inIface) {
+		ARP arpPacket = (ARP) etherPacket.getPayload();
+		int targetIp = ByteBuffer.wrap(arpPacket.getTargetProtocolAddress()).getInt();
+
+		// handle ARP request
+		if (arpPacket.getOpCode() == ARP.OP_REQUEST) {
+			if (targetIp != inIface.getIpAddress())
+				return;
+			sendPacket(buildARPReply(etherPacket, inIface), inIface);
+		}
+	}
+
 	private void handleIpPacket(Ethernet etherPacket, Iface inIface) {
 		// Make sure it's an IP packet
-		if (etherPacket.getEtherType() != Ethernet.TYPE_IPv4) {
+		if (etherPacket.getEtherType() != Ethernet.TYPE_IPv4)
 			return;
-		}
 
 		// Get IP header
 		IPv4 ipPacket = (IPv4) etherPacket.getPayload();
@@ -113,9 +129,8 @@ public class Router extends Device {
 		byte[] serialized = ipPacket.serialize();
 		ipPacket.deserialize(serialized, 0, serialized.length);
 		short calcCksum = ipPacket.getChecksum();
-		if (origCksum != calcCksum) {
+		if (origCksum != calcCksum)
 			return;
-		}
 
 		// Check TTL
 		ipPacket.setTtl((byte) (ipPacket.getTtl() - 1));
@@ -162,8 +177,6 @@ public class Router extends Device {
 
 		// Make sure we don't sent a packet back out the interface it came in
 		Iface outIface = bestMatch.getInterface();
-
-		
 		for (Iface routerIface : this.interfaces.values()) {
 			if (routerIface == outIface) {
 				if (ipPacket.getProtocol() == IPv4.PROTOCOL_TCP || ipPacket.getProtocol() == IPv4.PROTOCOL_UDP) {
@@ -178,7 +191,7 @@ public class Router extends Device {
 						sendPacket(echoReply, outIface);
 					}
 				}
-				
+
 				return;
 			}
 		}
@@ -292,5 +305,27 @@ public class Router extends Device {
 			return null;
 
 		return arpEntry.getMac();
+	}
+
+	private Ethernet buildARPReply(Ethernet etherPacket, Iface inIface) {
+		ARP arpReq = (ARP) etherPacket.getPayload();
+		Ethernet ether = new Ethernet();
+		ether.setEtherType(Ethernet.TYPE_ARP);
+		ether.setSourceMACAddress(inIface.getMacAddress().toBytes());
+		ether.setDestinationMACAddress(etherPacket.getSourceMACAddress());
+
+		ARP arp = new ARP();
+		arp.setHardwareType(ARP.HW_TYPE_ETHERNET);
+		arp.setProtocolType(ARP.PROTO_TYPE_IP);
+		arp.setHardwareAddressLength((byte) Ethernet.DATALAYER_ADDRESS_LENGTH);
+		arp.setProtocolAddressLength((byte) 4);
+		arp.setOpCode(ARP.OP_REPLY);
+		arp.setSenderHardwareAddress(inIface.getMacAddress().toBytes());
+		arp.setSenderProtocolAddress(inIface.getIpAddress());
+		arp.setTargetHardwareAddress(arpReq.getSenderHardwareAddress());
+		arp.setTargetProtocolAddress(arpReq.getSenderProtocolAddress());
+
+		ether.setPayload(arp);
+		return ether;
 	}
 }

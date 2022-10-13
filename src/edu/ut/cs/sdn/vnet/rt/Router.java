@@ -187,7 +187,7 @@ public class Router extends Device {
 
 					// Check if echo request
 					if (icmpPacket.getIcmpType() == 8) {
-						Ethernet echoReply = buildEchoReply(inIface, ipPacket);
+						Ethernet echoReply = buildEchoReply(inIface, etherPacket);
 						sendPacket(echoReply, outIface);
 					}
 				}
@@ -252,11 +252,13 @@ public class Router extends Device {
 		return ether;
 	}
 
-	private Ethernet buildEchoReply(Iface inIface, IPv4 originalPacket) {
+	private Ethernet buildEchoReply(Iface inIface, Ethernet originalEther) {
+		IPv4 originalPacket = (IPv4) originalEther.getPayload();
+		
 		Ethernet ether = new Ethernet();
 		ether.setEtherType(Ethernet.TYPE_IPv4);
 		ether.setSourceMACAddress(inIface.getMacAddress().toBytes());
-		ether.setDestinationMACAddress(getICMPDestinationMacAddress(originalPacket, inIface).toBytes());
+		ether.setDestinationMACAddress(originalEther.getSourceMACAddress());
 
 		IPv4 ip = new IPv4();
 		ip.setTtl((byte) 64);

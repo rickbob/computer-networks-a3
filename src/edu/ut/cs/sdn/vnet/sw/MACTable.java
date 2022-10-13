@@ -1,9 +1,9 @@
-package edu.wisc.cs.sdn.vnet.sw;
+package edu.ut.cs.sdn.vnet.sw;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import edu.wisc.cs.sdn.vnet.Iface;
+import edu.ut.cs.sdn.vnet.Iface;
 
 import net.floodlightcontroller.packet.MACAddress;
 

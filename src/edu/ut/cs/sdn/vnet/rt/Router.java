@@ -294,13 +294,6 @@ public class Router extends Device {
 			return null;
 		}
 
-		// Make sure we don't sent a packet back out the interface it came in
-		Iface outIface = bestMatch.getInterface();
-		if (outIface == inIface) {
-			System.out.println("outIface null");
-			return null;
-		}
-
 		// If no gateway, then nextHop is IP destination
 		int nextHop = bestMatch.getGatewayAddress();
 		if (0 == nextHop) {

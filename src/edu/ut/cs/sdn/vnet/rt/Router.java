@@ -143,13 +143,6 @@ public class Router extends Device {
 		// Reset checksum now that TTL is decremented
 		ipPacket.resetChecksum();
 
-		// Check if packet is destined for one of router's interfaces
-		// for (Iface iface : this.interfaces.values()) {
-		// 	if (ipPacket.getDestinationAddress() == iface.getIpAddress()) {
-		// 		return;
-		// 	}
-		// }
-
 		// Do route lookup and forward
 		this.forwardIpPacket(etherPacket, inIface);
 	}
@@ -192,9 +185,9 @@ public class Router extends Device {
 		}
 
 		// Make sure we don't sent a packet back out the interface it came in
-		Iface outIface = bestMatch.getInterface();
+
 		for (Iface routerIface : this.interfaces.values()) {
-			if (routerIface == outIface) {
+			if (routerIface.getIpAddress() == dstAddr) {
 				if (ipPacket.getProtocol() == IPv4.PROTOCOL_TCP || ipPacket.getProtocol() == IPv4.PROTOCOL_UDP) {
 					Ethernet icmpEtherPkt = getICMPPacket((byte) 3, (byte) 3, inIface, ipPacket);
 					sendPacket(icmpEtherPkt, inIface);
@@ -206,14 +199,15 @@ public class Router extends Device {
 						Ethernet echoReply = buildEchoReply(inIface, etherPacket);
 						System.out.println("*** -> Sending echo packet: " +
 								echoReply.toString().replace("\n", "\n\t"));
-						sendPacket(echoReply, outIface);
+						sendPacket(echoReply, routerIface);
 					}
 				}
 
 				return;
 			}
 		}
-
+		
+		Iface outIface = bestMatch.getInterface();
 		if (outIface == inIface) {
 			return;
 		}

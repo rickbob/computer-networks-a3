@@ -43,6 +43,10 @@ public class ArpQueueEntry {
     return arpRequest;
   }
 
+  public void incrementRetries() {
+    this.retryCount++;
+  }
+
   class EthernetQueueEntry {
     private Ethernet packet;
     private Iface inIface;

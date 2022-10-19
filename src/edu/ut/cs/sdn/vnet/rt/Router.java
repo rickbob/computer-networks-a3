@@ -422,6 +422,7 @@ public class Router extends Device {
 					for (Iface routerIface : this.interfaces.values()) {
 						sendPacket(entry.getArpRequest(), routerIface);
 					}
+					entry.incrementRetries();
 				} else {
 					// clear the queue and send destination unreachable
 					System.out.println("Out of retries");

@@ -44,7 +44,7 @@ public class Router extends Device {
 				runRetry();
 			}
 		};
-		retryThread.start();
+		// retryThread.start();
 	}
 
 	/**
@@ -214,6 +214,9 @@ public class Router extends Device {
 			if (nextHopQueue == null) {
 				nextHopQueue = new ArpQueueEntry(arpRequest);
 				arpQueue.put(nextHop, nextHopQueue);
+				for (Iface routerIface : this.interfaces.values()) {
+					sendPacket(arpRequest, routerIface);
+				}
 			}
 			etherPacket.setSourceMACAddress(bestMatch.getInterface().getMacAddress().toBytes());
 			nextHopQueue.add(etherPacket, inIface);

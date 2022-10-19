@@ -3,7 +3,7 @@ package edu.ut.cs.sdn.vnet.rt;
 import edu.ut.cs.sdn.vnet.Device;
 import edu.ut.cs.sdn.vnet.DumpFile;
 import edu.ut.cs.sdn.vnet.Iface;
-
+import edu.ut.cs.sdn.vnet.rt.ArpQueueEntry.EthernetQueueEntry;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPv4;
 import net.floodlightcontroller.packet.MACAddress;
@@ -12,6 +12,7 @@ import net.floodlightcontroller.packet.Data;
 import net.floodlightcontroller.packet.ARP;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Aaron Gember-Jacobson and Anubhavnidhi Abhashkumar
@@ -23,6 +24,11 @@ public class Router extends Device {
 	/** ARP cache for the router */
 	private ArpCache arpCache;
 
+	// create the queue of packets for each IP address
+	private ConcurrentHashMap<Integer, ArpQueueEntry> arpQueue;
+
+	private Thread retryThread;
+
 	/**
 	 * Creates a router for a specific host.
 	 * 
@@ -32,6 +38,13 @@ public class Router extends Device {
 		super(host, logfile);
 		this.routeTable = new RouteTable();
 		this.arpCache = new ArpCache();
+		this.arpQueue = new ConcurrentHashMap<>();
+		this.retryThread = new Thread(){
+			public void run() {
+				runRetry();
+			}
+		};
+		retryThread.start();
 	}
 
 	/**
@@ -111,6 +124,20 @@ public class Router extends Device {
 			if (targetIp != inIface.getIpAddress())
 				return;
 			sendPacket(buildARPReply(etherPacket, inIface), inIface);
+		} else if (arpPacket.getOpCode() == ARP.OP_REPLY) {
+			// create arpCache entry
+			int senderIp = ByteBuffer.wrap(arpPacket.getSenderProtocolAddress()).getInt();
+			MACAddress senderMAC = MACAddress.valueOf(arpPacket.getSenderHardwareAddress());
+			arpCache.insert(senderMAC, senderIp);
+
+			ArpQueueEntry packets = arpQueue.get(senderIp);
+			if (packets == null) return;
+			while (!packets.isEmpty()) {
+				Ethernet packet = packets.poll().getPacket();
+				packet.setDestinationMACAddress(senderMAC.toBytes());
+				sendPacket(packet, inIface);
+			}
+			arpQueue.remove(senderIp);
 		}
 	}
 
@@ -179,8 +206,17 @@ public class Router extends Device {
 		System.out.println("ARP ENTRY: " + arpEntry);
 		if (null == arpEntry) {
 			System.out.println("Here for " + nextHop);
-			Ethernet icmpEtherPkt = getICMPPacket((byte) 3, (byte) 1, inIface, ipPacket);
-			sendPacket(icmpEtherPkt, inIface);
+
+			Ethernet arpRequest = buildArpRequest(inIface, nextHop);
+			// Queue the packet
+			ArpQueueEntry nextHopQueue = arpQueue.getOrDefault(nextHop, new ArpQueueEntry(arpRequest));
+			etherPacket.setSourceMACAddress(bestMatch.getInterface().getMacAddress().toBytes());
+			nextHopQueue.add(etherPacket, inIface);
+
+			// for (Iface routerIface : this.interfaces.values()) {
+			// 	if (routerIface != inIface)
+			// 		sendPacket(arpRequest, routerIface);
+			// }
 			return;
 		}
 
@@ -206,7 +242,7 @@ public class Router extends Device {
 				return;
 			}
 		}
-		
+
 		Iface outIface = bestMatch.getInterface();
 		if (outIface == inIface) {
 			return;
@@ -253,7 +289,7 @@ public class Router extends Device {
 
 	private Ethernet buildEchoReply(Iface inIface, Ethernet originalEther) {
 		IPv4 originalPacket = (IPv4) originalEther.getPayload();
-		
+
 		Ethernet ether = new Ethernet();
 		ether.setEtherType(Ethernet.TYPE_IPv4);
 		ether.setSourceMACAddress(inIface.getMacAddress().toBytes());
@@ -327,5 +363,57 @@ public class Router extends Device {
 
 		ether.setPayload(arp);
 		return ether;
+	}
+
+	private Ethernet buildArpRequest(Iface inIface, int nextHop) {
+		Ethernet ether = new Ethernet();
+		ether.setEtherType(Ethernet.TYPE_ARP);
+		ether.setSourceMACAddress(inIface.getMacAddress().toBytes());
+		ether.setDestinationMACAddress(MACAddress.valueOf("FF:FF:FF:FF:FF:FF").toBytes());
+
+		ARP arp = new ARP();
+		arp.setHardwareType(ARP.HW_TYPE_ETHERNET);
+		arp.setProtocolType(ARP.PROTO_TYPE_IP);
+		arp.setHardwareAddressLength((byte) Ethernet.DATALAYER_ADDRESS_LENGTH);
+		arp.setProtocolAddressLength((byte) 4);
+		arp.setOpCode(ARP.OP_REQUEST);
+		arp.setSenderHardwareAddress(inIface.getMacAddress().toBytes());
+		arp.setSenderProtocolAddress(inIface.getIpAddress());
+		arp.setTargetHardwareAddress(IPv4.toIPv4AddressBytes(0));
+		arp.setTargetProtocolAddress(IPv4.toIPv4AddressBytes(nextHop));
+
+		ether.setPayload(arp);
+		return ether;
+	}
+
+	// resend requests in the ArpQueue on a timer
+	public void runRetry() {
+		while (true) {
+			// Run every second
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				break;
+			}
+
+			for (ArpQueueEntry entry : this.arpQueue.values()) {
+				// broadcast the retried ArpEntry
+				if (entry.canResend()) {
+					for (Iface routerIface : this.interfaces.values()) {
+						sendPacket(entry.getArpRequest(), routerIface);
+					}
+				} else {
+					// clear the queue and send destination unreachable
+					while (!entry.isEmpty()) {
+						ArpQueueEntry.EthernetQueueEntry packetEntry = entry.poll();
+						Iface inIface = packetEntry.getInIface();
+						IPv4 ipPacket = (IPv4) packetEntry.getPacket().getPayload();
+						Ethernet icmpEtherPkt = getICMPPacket((byte) 3, (byte) 1, inIface, ipPacket);
+						sendPacket(icmpEtherPkt, inIface);
+					}
+					// TODO: do we remove the entry from the table?
+				}
+			}
+		}
 	}
 }

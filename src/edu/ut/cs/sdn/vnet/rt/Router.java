@@ -163,7 +163,7 @@ public class Router extends Device {
 
 		// Check TTL
 		if (1 == ipPacket.getTtl()) {
-			Ethernet icmpEtherPkt = getICMPPacket((byte) 11, (byte) 0, inIface, ipPacket);
+			Ethernet icmpEtherPkt = getICMPPacket((byte) 11, (byte) 0, inIface, ipPacket, null);
 			sendPacket(icmpEtherPkt, inIface);
 			return;
 		}
@@ -192,7 +192,7 @@ public class Router extends Device {
 
 		// If no entry matched, do nothing
 		if (null == bestMatch) {
-			Ethernet icmpEtherPkt = getICMPPacket((byte) 3, (byte) 0, inIface, ipPacket);
+			Ethernet icmpEtherPkt = getICMPPacket((byte) 3, (byte) 0, inIface, ipPacket, null);
 			sendPacket(icmpEtherPkt, inIface);
 			return;
 		}
@@ -219,8 +219,8 @@ public class Router extends Device {
 				// 	sendPacket(arpRequest, routerIface);
 				// }
 			}
+			nextHopQueue.add(etherPacket, inIface, etherPacket.getSourceMAC());
 			etherPacket.setSourceMACAddress(bestMatch.getInterface().getMacAddress().toBytes());
-			nextHopQueue.add(etherPacket, inIface);
 
 			// for (Iface routerIface : this.interfaces.values()) {
 			// if (routerIface != inIface)
@@ -234,7 +234,7 @@ public class Router extends Device {
 		for (Iface routerIface : this.interfaces.values()) {
 			if (routerIface.getIpAddress() == dstAddr) {
 				if (ipPacket.getProtocol() == IPv4.PROTOCOL_TCP || ipPacket.getProtocol() == IPv4.PROTOCOL_UDP) {
-					Ethernet icmpEtherPkt = getICMPPacket((byte) 3, (byte) 3, inIface, ipPacket);
+					Ethernet icmpEtherPkt = getICMPPacket((byte) 3, (byte) 3, inIface, ipPacket, null);
 					sendPacket(icmpEtherPkt, inIface);
 				} else if (ipPacket.getProtocol() == IPv4.PROTOCOL_ICMP) {
 					ICMP icmpPacket = (ICMP) ipPacket.getPayload();
@@ -265,11 +265,15 @@ public class Router extends Device {
 		this.sendPacket(etherPacket, outIface);
 	}
 
-	private Ethernet getICMPPacket(byte type, byte code, Iface inIface, IPv4 originalPacket) {
+	private Ethernet getICMPPacket(byte type, byte code, Iface inIface, IPv4 originalPacket, MACAddress destMac) {
 		Ethernet ether = new Ethernet();
 		ether.setEtherType(Ethernet.TYPE_IPv4);
 		ether.setSourceMACAddress(inIface.getMacAddress().toBytes());
-		ether.setDestinationMACAddress(getICMPDestinationMacAddress(originalPacket, inIface).toBytes());
+		if (destMac == null) {
+			ether.setDestinationMACAddress(getICMPDestinationMacAddress(originalPacket, inIface).toBytes());
+		} else {
+			ether.setDestinationMACAddress(destMac.toBytes());
+		}
 
 		IPv4 ip = new IPv4();
 		ip.setTtl((byte) 64);
@@ -430,7 +434,7 @@ public class Router extends Device {
 						ArpQueueEntry.EthernetQueueEntry packetEntry = entry.poll();
 						Iface inIface = packetEntry.getInIface();
 						IPv4 ipPacket = (IPv4) packetEntry.getPacket().getPayload();
-						Ethernet icmpEtherPkt = getICMPPacket((byte) 3, (byte) 1, inIface, ipPacket);
+						Ethernet icmpEtherPkt = getICMPPacket((byte) 3, (byte) 1, inIface, ipPacket, packetEntry.getSourceMacAddress());
 						sendPacket(icmpEtherPkt, inIface);
 					}
 					// TODO: do we remove the entry from the table?

@@ -1,6 +1,7 @@
 package edu.ut.cs.sdn.vnet.rt;
 
 import net.floodlightcontroller.packet.Ethernet;
+import net.floodlightcontroller.packet.MACAddress;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.Queue;
@@ -19,8 +20,8 @@ public class ArpQueueEntry {
     this.packets = new ConcurrentLinkedQueue<>();
   }
 
-  public void add(Ethernet packet, Iface inIface) {
-    packets.add(new EthernetQueueEntry(packet, inIface));
+  public void add(Ethernet packet, Iface inIface, MACAddress sourceMac) {
+    packets.add(new EthernetQueueEntry(packet, inIface, sourceMac));
   }
 
   public EthernetQueueEntry poll() {
@@ -50,10 +51,12 @@ public class ArpQueueEntry {
   class EthernetQueueEntry {
     private Ethernet packet;
     private Iface inIface;
+    private MACAddress sourceMac;
 
-    public EthernetQueueEntry(Ethernet packet, Iface inIface) {
+    public EthernetQueueEntry(Ethernet packet, Iface inIface, MACAddress sourceMac) {
       this.packet = packet;
       this.inIface = inIface;
+      this.sourceMac = sourceMac;
     }
 
     public Ethernet getPacket() {
@@ -62,6 +65,10 @@ public class ArpQueueEntry {
 
     public Iface getInIface() {
       return inIface;
+    }
+
+    public MACAddress getSourceMacAddress() {
+      return sourceMac;
     }
   }
   

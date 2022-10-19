@@ -45,7 +45,7 @@ public class Router extends Device {
 				runRetry();
 			}
 		};
-		// retryThread.start();
+		retryThread.start();
 	}
 
 	/**
@@ -215,9 +215,9 @@ public class Router extends Device {
 			if (nextHopQueue == null) {
 				nextHopQueue = new ArpQueueEntry(arpRequest);
 				arpQueue.put(nextHop, nextHopQueue);
-				for (Iface routerIface : this.interfaces.values()) {
-					sendPacket(arpRequest, routerIface);
-				}
+				// for (Iface routerIface : this.interfaces.values()) {
+				// 	sendPacket(arpRequest, routerIface);
+				// }
 			}
 			etherPacket.setSourceMACAddress(bestMatch.getInterface().getMacAddress().toBytes());
 			nextHopQueue.add(etherPacket, inIface);
@@ -413,24 +413,22 @@ public class Router extends Device {
 				break;
 			}
 
-			synchronized (arpQueue) {
-				for (ArpQueueEntry entry : this.arpQueue.values()) {
-					// broadcast the retried ArpEntry
-					if (entry.canResend()) {
-						for (Iface routerIface : this.interfaces.values()) {
-							sendPacket(entry.getArpRequest(), routerIface);
-						}
-					} else {
-						// clear the queue and send destination unreachable
-						while (!entry.isEmpty()) {
-							ArpQueueEntry.EthernetQueueEntry packetEntry = entry.poll();
-							Iface inIface = packetEntry.getInIface();
-							IPv4 ipPacket = (IPv4) packetEntry.getPacket().getPayload();
-							Ethernet icmpEtherPkt = getICMPPacket((byte) 3, (byte) 1, inIface, ipPacket);
-							sendPacket(icmpEtherPkt, inIface);
-						}
-						// TODO: do we remove the entry from the table?
+			for (ArpQueueEntry entry : this.arpQueue.values()) {
+				// broadcast the retried ArpEntry
+				if (entry.canResend()) {
+					for (Iface routerIface : this.interfaces.values()) {
+						sendPacket(entry.getArpRequest(), routerIface);
 					}
+				} else {
+					// clear the queue and send destination unreachable
+					while (!entry.isEmpty()) {
+						ArpQueueEntry.EthernetQueueEntry packetEntry = entry.poll();
+						Iface inIface = packetEntry.getInIface();
+						IPv4 ipPacket = (IPv4) packetEntry.getPacket().getPayload();
+						Ethernet icmpEtherPkt = getICMPPacket((byte) 3, (byte) 1, inIface, ipPacket);
+						sendPacket(icmpEtherPkt, inIface);
+					}
+					// TODO: do we remove the entry from the table?
 				}
 			}
 		}

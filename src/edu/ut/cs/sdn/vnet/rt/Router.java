@@ -209,7 +209,11 @@ public class Router extends Device {
 
 			Ethernet arpRequest = buildArpRequest(inIface, nextHop);
 			// Queue the packet
-			ArpQueueEntry nextHopQueue = arpQueue.getOrDefault(nextHop, new ArpQueueEntry(arpRequest));
+			ArpQueueEntry nextHopQueue = arpQueue.get(nextHop);
+			if (nextHopQueue == null) {
+				nextHopQueue = new ArpQueueEntry(arpRequest);
+				arpQueue.put(nextHop, nextHopQueue);
+			}
 			etherPacket.setSourceMACAddress(bestMatch.getInterface().getMacAddress().toBytes());
 			nextHopQueue.add(etherPacket, inIface);
 

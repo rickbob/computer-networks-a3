@@ -27,6 +27,10 @@ public class RouteTable
 	 */
 	public RouteTable()
 	{ this.entries = new LinkedList<RouteEntry>(); }
+
+	public List<RouteEntry> getRouteEntries() {
+		return this.entries;
+	}
 	
 	/**
 	 * Lookup the route entry that matches a given IP address.
@@ -143,7 +147,7 @@ public class RouteTable
 			}
 			
 			// Add an entry to the route table
-			this.insert(dstIp, gwIp, maskIp, iface);
+			this.insert(dstIp, gwIp, maskIp, iface, 1);
 		}
 	
 		// Close the file
@@ -159,9 +163,9 @@ public class RouteTable
 	 * @param iface router interface out which to send packets to reach the 
 	 *        destination or gateway
 	 */
-	public void insert(int dstIp, int gwIp, int maskIp, Iface iface)
+	public void insert(int dstIp, int gwIp, int maskIp, Iface iface, int distance)
 	{
-		RouteEntry entry = new RouteEntry(dstIp, gwIp, maskIp, iface);
+		RouteEntry entry = new RouteEntry(dstIp, gwIp, maskIp, iface, distance, System.currentTimeMillis());
         synchronized(this.entries)
         { 
             this.entries.add(entry);

@@ -2,6 +2,8 @@ package net.floodlightcontroller.packet;
 
 import java.nio.ByteBuffer;
 
+import edu.ut.cs.sdn.vnet.rt.RouteEntry;
+
 /**
   * @author Anubhavnidhi Abhashkumar and Aaron Gember-Jacobson
   */
@@ -25,6 +27,13 @@ public class RIPv2Entry
         this.address = address;
         this.subnetMask = subnetMask;
         this.metric = metric;
+    }
+
+    public RIPv2Entry(RouteEntry routeEntry) {
+        this.addressFamily = ADDRESS_FAMILY_IPv4;
+        this.address = routeEntry.getDestinationAddress();
+        this.subnetMask = routeEntry.getMaskAddress();
+        this.metric = routeEntry.getDistance();
     }
 
 	public String toString()

@@ -413,14 +413,18 @@ public class Router extends Device {
 				break;
 			}
 
+			System.out.println("1 second elapsed");
+
 			for (ArpQueueEntry entry : this.arpQueue.values()) {
 				// broadcast the retried ArpEntry
 				if (entry.canResend()) {
+					System.out.println("Resending...");
 					for (Iface routerIface : this.interfaces.values()) {
 						sendPacket(entry.getArpRequest(), routerIface);
 					}
 				} else {
 					// clear the queue and send destination unreachable
+					System.out.println("Out of retries");
 					while (!entry.isEmpty()) {
 						ArpQueueEntry.EthernetQueueEntry packetEntry = entry.poll();
 						Iface inIface = packetEntry.getInIface();

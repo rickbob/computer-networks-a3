@@ -388,7 +388,7 @@ public class Router extends Device {
 		arp.setOpCode(ARP.OP_REQUEST);
 		arp.setSenderHardwareAddress(inIface.getMacAddress().toBytes());
 		arp.setSenderProtocolAddress(inIface.getIpAddress());
-		arp.setTargetHardwareAddress(IPv4.toIPv4AddressBytes(0));
+		arp.setTargetHardwareAddress(MACAddress.valueOf(0).toBytes());
 		arp.setTargetProtocolAddress(IPv4.toIPv4AddressBytes(nextHop));
 
 		System.out.println("Destination MAC: " + MACAddress.valueOf("FF:FF:FF:FF:FF:FF").toBytes().length);

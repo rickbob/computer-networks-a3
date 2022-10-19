@@ -395,14 +395,6 @@ public class Router extends Device {
 		arp.setTargetHardwareAddress(MACAddress.valueOf(0).toBytes());
 		arp.setTargetProtocolAddress(IPv4.toIPv4AddressBytes(nextHop));
 
-		System.out.println("Destination MAC: " + MACAddress.valueOf("FF:FF:FF:FF:FF:FF").toBytes().length);
-		System.out.println("Sender Hardware Address: " + Arrays.toString(arp.getSenderHardwareAddress()));
-		System.out.println("Sender Protocol Address: " + Arrays.toString(arp.getSenderProtocolAddress()));
-		System.out.println("Target Hardware Address: " + Arrays.toString(arp.getTargetHardwareAddress()));
-		System.out.println("Target Protocol Address: " + Arrays.toString(arp.getTargetProtocolAddress()));
-		System.out.println("Hardware Length: " + arp.getHardwareAddressLength());
-		System.out.println("Protocol Length: " + arp.getProtocolAddressLength());
-
 		ether.setPayload(arp);
 		return ether;
 	}
@@ -417,19 +409,15 @@ public class Router extends Device {
 				break;
 			}
 
-			System.out.println("1 second elapsed");
-
 			for (ArpQueueEntry entry : this.arpQueue.values()) {
 				// broadcast the retried ArpEntry
 				if (entry.canResend()) {
-					System.out.println("Resending...");
 					for (Iface routerIface : this.interfaces.values()) {
 						sendPacket(entry.getArpRequest(), routerIface);
 					}
 					entry.incrementRetries();
 				} else {
 					// clear the queue and send destination unreachable
-					System.out.println("Out of retries");
 					while (!entry.isEmpty()) {
 						ArpQueueEntry.EthernetQueueEntry packetEntry = entry.poll();
 						Iface inIface = packetEntry.getInIface();

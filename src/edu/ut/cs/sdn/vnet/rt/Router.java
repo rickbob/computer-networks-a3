@@ -3,7 +3,6 @@ package edu.ut.cs.sdn.vnet.rt;
 import edu.ut.cs.sdn.vnet.Device;
 import edu.ut.cs.sdn.vnet.DumpFile;
 import edu.ut.cs.sdn.vnet.Iface;
-import edu.ut.cs.sdn.vnet.rt.ArpQueueEntry.EthernetQueueEntry;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPv4;
 import net.floodlightcontroller.packet.MACAddress;
@@ -15,7 +14,7 @@ import net.floodlightcontroller.packet.Data;
 import net.floodlightcontroller.packet.ARP;
 
 import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -146,9 +145,10 @@ public class Router extends Device {
 		RIPv2 ripPacket = (RIPv2) udpPacket.getPayload();
 
 		if (ripPacket.getCommand() == RIPv2.COMMAND_REQUEST) {
-			// this.handleRIPRequest(etherPacket, inIface);
+			Ethernet rip = buildRIPResponse(inIface.getMacAddress().toString(), IPv4.fromIPv4Address(inIface.getIpAddress()));
+			sendPacket(rip, inIface);
 		} else if (ripPacket.getCommand() == RIPv2.COMMAND_RESPONSE) {
-			// this.handleRIPResponse(etherPacket, inIface);
+			// Handle RIP response
 		}
 	}
 
@@ -530,6 +530,15 @@ public class Router extends Device {
 			for (Iface routerIface : this.interfaces.values()) {
 				ether.setSourceMACAddress(routerIface.getMacAddress().toBytes());
 				sendPacket(ether, routerIface);
+			}
+
+			// Clear old route entries
+			Iterator<RouteEntry> iterator = routeTable.getRouteEntries().iterator();
+			while (iterator.hasNext()) {
+				RouteEntry routeEntry = iterator.next();
+				if (routeEntry.getDistance() > 0 && routeEntry.getLastUpdate() + 30_000 >= System.currentTimeMillis()) {
+					iterator.remove();
+				}
 			}
 		}
 	}

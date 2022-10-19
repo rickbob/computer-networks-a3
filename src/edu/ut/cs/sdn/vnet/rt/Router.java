@@ -12,6 +12,7 @@ import net.floodlightcontroller.packet.Data;
 import net.floodlightcontroller.packet.ARP;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -389,6 +390,14 @@ public class Router extends Device {
 		arp.setSenderProtocolAddress(inIface.getIpAddress());
 		arp.setTargetHardwareAddress(IPv4.toIPv4AddressBytes(0));
 		arp.setTargetProtocolAddress(IPv4.toIPv4AddressBytes(nextHop));
+
+		System.out.println("Destination MAC: " + MACAddress.valueOf("FF:FF:FF:FF:FF:FF").toBytes().length);
+		System.out.println("Sender Hardware Address: " + Arrays.toString(arp.getSenderHardwareAddress()));
+		System.out.println("Sender Protocol Address: " + Arrays.toString(arp.getSenderProtocolAddress()));
+		System.out.println("Target Hardware Address: " + Arrays.toString(arp.getTargetHardwareAddress()));
+		System.out.println("Target Protocol Address: " + Arrays.toString(arp.getTargetProtocolAddress()));
+		System.out.println("Hardware Length: " + arp.getHardwareAddressLength());
+		System.out.println("Protocol Length: " + arp.getProtocolAddressLength());
 
 		ether.setPayload(arp);
 		return ether;

@@ -39,7 +39,7 @@ public class Router extends Device {
 		this.routeTable = new RouteTable();
 		this.arpCache = new ArpCache();
 		this.arpQueue = new ConcurrentHashMap<>();
-		this.retryThread = new Thread(){
+		this.retryThread = new Thread() {
 			public void run() {
 				runRetry();
 			}
@@ -131,7 +131,8 @@ public class Router extends Device {
 			arpCache.insert(senderMAC, senderIp);
 
 			ArpQueueEntry packets = arpQueue.get(senderIp);
-			if (packets == null) return;
+			if (packets == null)
+				return;
 			while (!packets.isEmpty()) {
 				Ethernet packet = packets.poll().getPacket();
 				packet.setDestinationMACAddress(senderMAC.toBytes());
@@ -218,8 +219,8 @@ public class Router extends Device {
 			nextHopQueue.add(etherPacket, inIface);
 
 			// for (Iface routerIface : this.interfaces.values()) {
-			// 	if (routerIface != inIface)
-			// 		sendPacket(arpRequest, routerIface);
+			// if (routerIface != inIface)
+			// sendPacket(arpRequest, routerIface);
 			// }
 			return;
 		}
@@ -400,22 +401,24 @@ public class Router extends Device {
 				break;
 			}
 
-			for (ArpQueueEntry entry : this.arpQueue.values()) {
-				// broadcast the retried ArpEntry
-				if (entry.canResend()) {
-					for (Iface routerIface : this.interfaces.values()) {
-						sendPacket(entry.getArpRequest(), routerIface);
+			synchronized (arpQueue) {
+				for (ArpQueueEntry entry : this.arpQueue.values()) {
+					// broadcast the retried ArpEntry
+					if (entry.canResend()) {
+						for (Iface routerIface : this.interfaces.values()) {
+							sendPacket(entry.getArpRequest(), routerIface);
+						}
+					} else {
+						// clear the queue and send destination unreachable
+						while (!entry.isEmpty()) {
+							ArpQueueEntry.EthernetQueueEntry packetEntry = entry.poll();
+							Iface inIface = packetEntry.getInIface();
+							IPv4 ipPacket = (IPv4) packetEntry.getPacket().getPayload();
+							Ethernet icmpEtherPkt = getICMPPacket((byte) 3, (byte) 1, inIface, ipPacket);
+							sendPacket(icmpEtherPkt, inIface);
+						}
+						// TODO: do we remove the entry from the table?
 					}
-				} else {
-					// clear the queue and send destination unreachable
-					while (!entry.isEmpty()) {
-						ArpQueueEntry.EthernetQueueEntry packetEntry = entry.poll();
-						Iface inIface = packetEntry.getInIface();
-						IPv4 ipPacket = (IPv4) packetEntry.getPacket().getPayload();
-						Ethernet icmpEtherPkt = getICMPPacket((byte) 3, (byte) 1, inIface, ipPacket);
-						sendPacket(icmpEtherPkt, inIface);
-					}
-					// TODO: do we remove the entry from the table?
 				}
 			}
 		}

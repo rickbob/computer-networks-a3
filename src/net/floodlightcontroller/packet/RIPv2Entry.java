@@ -34,7 +34,7 @@ public class RIPv2Entry
         if (routeEntry.getGatewayAddress() != 0) {
             this.nextHopAddress = routeEntry.getGatewayAddress();
         } else {
-            this.nextHopAddress = routeEntry.getInterface().getIpAddress();
+            this.nextHopAddress = routeEntry.getInterface().getIpAddress() & routeEntry.getInterface().getSubnetMask();
         }
         
         this.address = routeEntry.getDestinationAddress();

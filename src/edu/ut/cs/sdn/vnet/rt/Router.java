@@ -466,10 +466,10 @@ public class Router extends Device {
 
 		RIPv2 rip = new RIPv2();
 		rip.setCommand(RIPv2.COMMAND_REQUEST);
-		for (RouteEntry routeEntry : routeTable.getRouteEntries()) {
-			RIPv2Entry riPv2Entry = new RIPv2Entry(routeEntry);
-			rip.addEntry(riPv2Entry);
-		}
+		// for (RouteEntry routeEntry : routeTable.getRouteEntries()) {
+		// 	RIPv2Entry riPv2Entry = new RIPv2Entry(routeEntry);
+		// 	rip.addEntry(riPv2Entry);
+		// }
 
 		ether.setPayload(ip);
 		ip.setPayload(udp);

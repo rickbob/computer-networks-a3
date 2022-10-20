@@ -58,6 +58,7 @@ public class Router extends Device {
 	}
 
 	public void buildRouteTableFromRIP() {
+		System.out.println("Building route table using RIP...");
 		// initializing the directly reachable subnets via router's interfaces
 		for (Iface routerIface : this.interfaces.values()) {
 			routeTable.insert(routerIface.getIpAddress(), 0, routerIface.getSubnetMask(), routerIface, 0);

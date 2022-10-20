@@ -165,7 +165,7 @@ public class RouteTable
 	 */
 	public void insert(int dstIp, int gwIp, int maskIp, Iface iface, int distance)
 	{
-		System.out.printf("Inserting (%s, %s, %s, %s)%n", dstIp, gwIp, maskIp, iface.getName());
+		System.out.printf("Inserting (%s, %s, %s, %s)%n", IPv4.fromIPv4Address(dstIp), IPv4.fromIPv4Address(gwIp), IPv4.fromIPv4Address(maskIp), iface.getName());
 		RouteEntry entry = new RouteEntry(dstIp, gwIp, maskIp, iface, distance, System.currentTimeMillis());
         synchronized(this.entries)
         { 

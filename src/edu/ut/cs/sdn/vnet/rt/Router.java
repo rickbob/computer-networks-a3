@@ -164,9 +164,9 @@ public class Router extends Device {
 				int address = ripEntry.getAddress();
 				int mask = ripEntry.getSubnetMask();
 				int gwIp = ripEntry.getNextHopAddress();
-				if (gwIp == 0) {
-					gwIp = inIface.getIpAddress();
-				}
+				// if (gwIp == 0) {
+					// gwIp = inIface.getIpAddress();
+				// }
 				int newDistance = ripEntry.getMetric() + 1;
 
 				System.out.println("Address: " + IPv4.fromIPv4Address(address));

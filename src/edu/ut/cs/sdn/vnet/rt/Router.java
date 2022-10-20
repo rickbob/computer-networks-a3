@@ -163,7 +163,7 @@ public class Router extends Device {
 			for (RIPv2Entry ripEntry : ripPacket.getEntries()) {
 				int address = ripEntry.getAddress();
 				int mask = ripEntry.getSubnetMask();
-				int gwIp = ripEntry.getNextHopAddress();
+				int gwIp = ipPacket.getSourceAddress();
 				// if (gwIp == 0) {
 					// gwIp = inIface.getIpAddress();
 				// }

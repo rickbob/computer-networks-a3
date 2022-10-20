@@ -133,7 +133,7 @@ public class Router extends Device {
 					UDP udpPacket = (UDP) ipPacket.getPayload();
 					if (udpPacket.getDestinationPort() == UDP.RIP_PORT) {
 						this.handleRIPPacket(etherPacket, inIface);
-						break;
+						return;
 					}
 				}
 				this.handleIpPacket(etherPacket, inIface);
@@ -275,7 +275,7 @@ public class Router extends Device {
 		ArpEntry arpEntry = this.arpCache.lookup(nextHop);
 		System.out.println("ARP ENTRY: " + arpEntry);
 		if (null == arpEntry) {
-			System.out.println("Here for " + nextHop);
+			System.out.println("Here for: " + IPv4.fromIPv4Address(nextHop));
 
 			Ethernet arpRequest = buildArpRequest(inIface, nextHop);
 			// Queue the packet

@@ -162,7 +162,7 @@ public class Router extends Device {
 					int currDistance = curr.getDistance();
 					if (ripEntry.getMetric() + 1 < currDistance) {
 						routeTable.remove(address, curr.getMaskAddress());
-						routeTable.insert(address, ripEntry.getNextHopAddress(), address & ripEntry.getSubnetMask(),
+						routeTable.insert(address & ripEntry.getSubnetMask(), address, ripEntry.getSubnetMask(),
 								inIface, ripEntry.getMetric() + 1);
 					}
 				}

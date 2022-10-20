@@ -60,7 +60,8 @@ public class Router extends Device {
 	public void buildRouteTableFromRIP() {
 		// initializing the directly reachable subnets via router's interfaces
 		for (Iface routerIface : this.interfaces.values()) {
-			routeTable.insert(routerIface.getIpAddress(), 0, routerIface.getSubnetMask(), routerIface, 0);
+			routeTable.insert(routerIface.getIpAddress(), 0, routerIface.getSubnetMask() & routerIface.getIpAddress(),
+					routerIface, 0);
 		}
 
 		Ethernet ripEthernet = buildRIPRequest();
@@ -121,7 +122,7 @@ public class Router extends Device {
 		switch (etherPacket.getEtherType()) {
 			case Ethernet.TYPE_IPv4:
 				IPv4 ipPacket = (IPv4) etherPacket.getPayload();
-				if (ipPacket.getProtocol() == IPv4.PROTOCOL_UDP && 
+				if (ipPacket.getProtocol() == IPv4.PROTOCOL_UDP &&
 						ipPacket.getDestinationAddress() == IPv4.toIPv4Address("224.0.0.9")) {
 					UDP udpPacket = (UDP) ipPacket.getPayload();
 					if (udpPacket.getDestinationPort() == UDP.RIP_PORT) {
@@ -145,10 +146,27 @@ public class Router extends Device {
 		RIPv2 ripPacket = (RIPv2) udpPacket.getPayload();
 
 		if (ripPacket.getCommand() == RIPv2.COMMAND_REQUEST) {
-			Ethernet rip = buildRIPResponse(inIface.getMacAddress().toString(), IPv4.fromIPv4Address(inIface.getIpAddress()));
+			// Handle RIP request by sending response
+			Ethernet rip = buildRIPResponse(inIface.getMacAddress().toString(),
+					IPv4.fromIPv4Address(inIface.getIpAddress()));
 			sendPacket(rip, inIface);
 		} else if (ripPacket.getCommand() == RIPv2.COMMAND_RESPONSE) {
-			// Handle RIP response
+			// Handle RIP response by updating this router's route table
+			for (RIPv2Entry ripEntry : ripPacket.getEntries()) {
+				int address = ripEntry.getAddress();
+				RouteEntry curr = routeTable.lookup(address);
+				if (curr == null) {
+					routeTable.insert(address, ripEntry.getNextHopAddress(), address & ripEntry.getSubnetMask(),
+							inIface, ripEntry.getMetric() + 1);
+				} else {
+					int currDistance = curr.getDistance();
+					if (ripEntry.getMetric() + 1 < currDistance) {
+						routeTable.remove(address, curr.getMaskAddress());
+						routeTable.insert(address, ripEntry.getNextHopAddress(), address & ripEntry.getSubnetMask(),
+								inIface, ripEntry.getMetric() + 1);
+					}
+				}
+			}
 		}
 	}
 
@@ -536,7 +554,7 @@ public class Router extends Device {
 			Iterator<RouteEntry> iterator = routeTable.getRouteEntries().iterator();
 			while (iterator.hasNext()) {
 				RouteEntry routeEntry = iterator.next();
-				if (routeEntry.getDistance() > 0 && routeEntry.getLastUpdate() + 30_000 >= System.currentTimeMillis()) {
+				if (routeEntry.getDistance() > 0 && routeEntry.getLastUpdate() + 30_000 <= System.currentTimeMillis()) {
 					iterator.remove();
 				}
 			}

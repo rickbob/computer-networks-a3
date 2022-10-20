@@ -150,6 +150,7 @@ public class Router extends Device {
 		IPv4 ipPacket = (IPv4) etherPacket.getPayload();
 		UDP udpPacket = (UDP) ipPacket.getPayload();
 		RIPv2 ripPacket = (RIPv2) udpPacket.getPayload();
+		System.out.println("Got RIP packet");
 
 		if (ripPacket.getCommand() == RIPv2.COMMAND_REQUEST) {
 			// Handle RIP request by sending response
@@ -496,9 +497,11 @@ public class Router extends Device {
 	public Ethernet buildRIPResponse(String destMAC, String destIP) {
 		Ethernet ether = new Ethernet();
 		ether.setDestinationMACAddress(destMAC);
+		ether.setEtherType(Ethernet.TYPE_IPv4);
 
 		IPv4 ip = new IPv4();
 		ip.setDestinationAddress(destIP);
+		ip.setProtocol(IPv4.PROTOCOL_UDP);
 
 		UDP udp = new UDP();
 		udp.setDestinationPort((short) UDP.RIP_PORT);
@@ -553,12 +556,14 @@ public class Router extends Device {
 
 	public void runRIPResponse() {
 		while (true) {
+			System.out.println("RIP Response thread timer");
 			// Run every 10 seconds
 			try {
 				Thread.sleep(10000);
 			} catch (InterruptedException e) {
 				break;
 			}
+
 			Ethernet ether = buildRIPResponse("FF:FF:FF:FF:FF:FF", "224.0.0.9");
 			for (Iface routerIface : this.interfaces.values()) {
 				ether.setSourceMACAddress(routerIface.getMacAddress().toBytes());

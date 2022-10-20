@@ -471,10 +471,12 @@ public class Router extends Device {
 		Ethernet ether = new Ethernet();
 		ether.setSourceMACAddress(outFace.getMacAddress().toBytes());
 		ether.setDestinationMACAddress("FF:FF:FF:FF:FF:FF");
+		ether.setEtherType(Ethernet.TYPE_IPv4);
 
 		IPv4 ip = new IPv4();
 		ip.setSourceAddress(outFace.getIpAddress());
 		ip.setDestinationAddress("224.0.0.9");
+		ip.setProtocol(IPv4.PROTOCOL_UDP);
 
 		UDP udp = new UDP();
 		udp.setDestinationPort((short) UDP.RIP_PORT);
@@ -556,7 +558,6 @@ public class Router extends Device {
 
 	public void runRIPResponse() {
 		while (true) {
-			System.out.println("RIP Response thread timer");
 			// Run every 10 seconds
 			try {
 				Thread.sleep(10000);

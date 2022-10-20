@@ -509,6 +509,7 @@ public class Router extends Device {
 		IPv4 ip = new IPv4();
 		ip.setDestinationAddress(destIP);
 		ip.setProtocol(IPv4.PROTOCOL_UDP);
+		ip.setSourceAddress(outFace.getIpAddress());
 
 		UDP udp = new UDP();
 		udp.setDestinationPort((short) UDP.RIP_PORT);
@@ -572,6 +573,7 @@ public class Router extends Device {
 
 			for (Iface routerIface : this.interfaces.values()) {
 				Ethernet ether = buildRIPResponse(routerIface, "FF:FF:FF:FF:FF:FF", "224.0.0.9");
+				IPv4 ip = (IPv4) ether.getPayload();
 				ether.setSourceMACAddress(routerIface.getMacAddress().toBytes());
 				sendPacket(ether, routerIface);
 			}

@@ -162,11 +162,12 @@ public class Router extends Device {
 				RouteEntry curr = routeTable.lookup(address);
 				if (curr == null) {
 					routeTable.insert(address, gwIp, mask, inIface, newDistance);
-				} else if (newDistance < curr.getDistance()) {
+				} else if (newDistance <= curr.getDistance()) {
 					routeTable.update(address, gwIp, mask, newDistance, inIface);
 				}
 			}
 		}
+
 	}
 
 	private void handleArpPacket(Ethernet etherPacket, Iface inIface) {

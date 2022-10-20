@@ -210,6 +210,7 @@ public class RouteTable
             entry.setGatewayAddress(gwIp);
             entry.setInterface(iface);
 						entry.setDistance(distance);
+						entry.setLastUpdate(System.currentTimeMillis());
         }
         return true;
 	}

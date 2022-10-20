@@ -69,6 +69,11 @@ public class Router extends Device {
 			Ethernet ripEthernet = buildRIPRequest(routeIface);
 			sendPacket(ripEthernet, routeIface);
 		}
+		new Thread() {
+			public void run() {
+				runRIPResponse();
+			}
+		}.start();
 	}
 
 	/**
@@ -153,14 +158,22 @@ public class Router extends Device {
 			sendPacket(rip, inIface);
 		} else if (ripPacket.getCommand() == RIPv2.COMMAND_RESPONSE) {
 			// Handle RIP response by updating this router's route table
+			System.out.println("GETTING RIP RESPONSE");
+
 			for (RIPv2Entry ripEntry : ripPacket.getEntries()) {
 				int address = ripEntry.getAddress();
 				int mask = ripEntry.getSubnetMask();
 				int gwIp = ripEntry.getNextHopAddress();
 				int newDistance = ripEntry.getMetric() + 1;
 
+				System.out.println("Address: " + IPv4.fromIPv4Address(address));
+				System.out.println("Mask: " + IPv4.fromIPv4Address(mask));
+				System.out.println("GW: " + IPv4.fromIPv4Address(gwIp));
+				System.out.println("Distance: " + newDistance);
+
 				RouteEntry curr = routeTable.lookup(address);
 				if (curr == null) {
+					System.out.println("GETTING NEW ROUTETABLE ENTRY");
 					routeTable.insert(address, gwIp, mask, inIface, newDistance);
 				} else if (newDistance <= curr.getDistance()) {
 					routeTable.update(address, gwIp, mask, newDistance, inIface);

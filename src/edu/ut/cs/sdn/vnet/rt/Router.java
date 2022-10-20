@@ -61,7 +61,7 @@ public class Router extends Device {
 		System.out.println("Building route table using RIP...");
 		// initializing the directly reachable subnets via router's interfaces
 		for (Iface routerIface : this.interfaces.values()) {
-			routeTable.insert(routerIface.getIpAddress(), 0, routerIface.getSubnetMask(), routerIface, 0);
+			routeTable.insert(routerIface.getIpAddress() & routerIface.getSubnetMask(), 0, routerIface.getSubnetMask(), routerIface, 0);
 		}
 
 		Ethernet ripEthernet = buildRIPRequest();
@@ -453,11 +453,13 @@ public class Router extends Device {
 		return ether;
 	}
 
-	public Ethernet buildRIPRequest() {
+	public Ethernet buildRIPRequest(Iface outFace) {
 		Ethernet ether = new Ethernet();
+		ether.setSourceMACAddress(outFace.getMacAddress().toBytes());
 		ether.setDestinationMACAddress("FF:FF:FF:FF:FF:FF");
 
 		IPv4 ip = new IPv4();
+		ip.setSourceAddress(outFace.getIpAddress());
 		ip.setDestinationAddress("224.0.0.9");
 
 		UDP udp = new UDP();

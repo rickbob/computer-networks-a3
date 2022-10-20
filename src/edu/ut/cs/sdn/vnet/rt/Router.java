@@ -154,7 +154,7 @@ public class Router extends Device {
 
 		if (ripPacket.getCommand() == RIPv2.COMMAND_REQUEST) {
 			// Handle RIP request by sending response
-			Ethernet rip = buildRIPResponse(inIface.getMacAddress().toString(),
+			Ethernet rip = buildRIPResponse(inIface, inIface.getMacAddress().toString(),
 					IPv4.fromIPv4Address(inIface.getIpAddress()));
 			sendPacket(rip, inIface);
 		} else if (ripPacket.getCommand() == RIPv2.COMMAND_RESPONSE) {
@@ -566,8 +566,8 @@ public class Router extends Device {
 				break;
 			}
 
-			Ethernet ether = buildRIPResponse("FF:FF:FF:FF:FF:FF", "224.0.0.9");
 			for (Iface routerIface : this.interfaces.values()) {
+				Ethernet ether = buildRIPResponse(routerIface, "FF:FF:FF:FF:FF:FF", "224.0.0.9");
 				ether.setSourceMACAddress(routerIface.getMacAddress().toBytes());
 				sendPacket(ether, routerIface);
 			}

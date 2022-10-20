@@ -128,12 +128,11 @@ public class Router extends Device {
 		switch (etherPacket.getEtherType()) {
 			case Ethernet.TYPE_IPv4:
 				IPv4 ipPacket = (IPv4) etherPacket.getPayload();
-				if (ipPacket.getProtocol() == IPv4.PROTOCOL_UDP &&
-						ipPacket.getDestinationAddress() == IPv4.toIPv4Address("224.0.0.9")) {
+				if (ipPacket.getProtocol() == IPv4.PROTOCOL_UDP) {
 					UDP udpPacket = (UDP) ipPacket.getPayload();
 					if (udpPacket.getDestinationPort() == UDP.RIP_PORT) {
 						this.handleRIPPacket(etherPacket, inIface);
-						return;
+						break;
 					}
 				}
 				this.handleIpPacket(etherPacket, inIface);

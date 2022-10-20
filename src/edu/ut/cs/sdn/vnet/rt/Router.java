@@ -496,8 +496,9 @@ public class Router extends Device {
 		return ether;
 	}
 
-	public Ethernet buildRIPResponse(String destMAC, String destIP) {
+	public Ethernet buildRIPResponse(Iface outFace, String destMAC, String destIP) {
 		Ethernet ether = new Ethernet();
+		ether.setSourceMACAddress(outFace.getMacAddress().toBytes());
 		ether.setDestinationMACAddress(destMAC);
 		ether.setEtherType(Ethernet.TYPE_IPv4);
 

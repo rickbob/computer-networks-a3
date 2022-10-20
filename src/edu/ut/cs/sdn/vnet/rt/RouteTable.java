@@ -199,7 +199,7 @@ public class RouteTable
 	 * @param iface new router interface for matching entry
      * @return true if a matching entry was found and updated, otherwise false
 	 */
-	public boolean update(int dstIp, int maskIp, int gwIp, 
+	public boolean update(int dstIp, int gwIp, int maskIp, int distance,
             Iface iface)
 	{
         synchronized(this.entries)
@@ -209,6 +209,7 @@ public class RouteTable
             { return false; }
             entry.setGatewayAddress(gwIp);
             entry.setInterface(iface);
+						entry.setDistance(distance);
         }
         return true;
 	}

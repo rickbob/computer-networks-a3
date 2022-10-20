@@ -61,7 +61,8 @@ public class Router extends Device {
 		System.out.println("Building route table using RIP...");
 		// initializing the directly reachable subnets via router's interfaces
 		for (Iface routerIface : this.interfaces.values()) {
-			routeTable.insert(routerIface.getIpAddress() & routerIface.getSubnetMask(), 0, routerIface.getSubnetMask(), routerIface, 0);
+			routeTable.insert(routerIface.getIpAddress() & routerIface.getSubnetMask(), 0, routerIface.getSubnetMask(),
+					routerIface, 0);
 		}
 
 		for (Iface routeIface : this.interfaces.values()) {
@@ -154,17 +155,15 @@ public class Router extends Device {
 			// Handle RIP response by updating this router's route table
 			for (RIPv2Entry ripEntry : ripPacket.getEntries()) {
 				int address = ripEntry.getAddress();
+				int mask = ripEntry.getSubnetMask();
+				int gwIp = ripEntry.getNextHopAddress();
+				int newDistance = ripEntry.getMetric() + 1;
+
 				RouteEntry curr = routeTable.lookup(address);
 				if (curr == null) {
-					routeTable.insert(address, ripEntry.getNextHopAddress(), address & ripEntry.getSubnetMask(),
-							inIface, ripEntry.getMetric() + 1);
-				} else {
-					int currDistance = curr.getDistance();
-					if (ripEntry.getMetric() + 1 < currDistance) {
-						routeTable.remove(address, curr.getMaskAddress());
-						routeTable.insert(address & ripEntry.getSubnetMask(), address, ripEntry.getSubnetMask(),
-								inIface, ripEntry.getMetric() + 1);
-					}
+					routeTable.insert(address, gwIp, mask, inIface, newDistance);
+				} else if (newDistance < curr.getDistance()) {
+					routeTable.update(address, gwIp, mask, newDistance, inIface);
 				}
 			}
 		}
@@ -469,8 +468,8 @@ public class Router extends Device {
 		RIPv2 rip = new RIPv2();
 		rip.setCommand(RIPv2.COMMAND_REQUEST);
 		// for (RouteEntry routeEntry : routeTable.getRouteEntries()) {
-		// 	RIPv2Entry riPv2Entry = new RIPv2Entry(routeEntry);
-		// 	rip.addEntry(riPv2Entry);
+		// RIPv2Entry riPv2Entry = new RIPv2Entry(routeEntry);
+		// rip.addEntry(riPv2Entry);
 		// }
 
 		ether.setPayload(ip);

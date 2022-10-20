@@ -31,6 +31,12 @@ public class RIPv2Entry
 
     public RIPv2Entry(RouteEntry routeEntry) {
         this.addressFamily = ADDRESS_FAMILY_IPv4;
+        if (routeEntry.getGatewayAddress() != 0) {
+            this.nextHopAddress = routeEntry.getGatewayAddress();
+        } else {
+            this.nextHopAddress = routeEntry.getInterface().getIpAddress();
+        }
+        
         this.address = routeEntry.getDestinationAddress();
         this.subnetMask = routeEntry.getMaskAddress();
         this.metric = routeEntry.getDistance();
@@ -39,8 +45,8 @@ public class RIPv2Entry
 	public String toString()
 	{
         return String.format("RIPv2Entry : {addressFamily=%d, routeTag=%d, address=%s, subnetMask=%s, nextHopAddress=%s, metric=%d}", 
-                this.addressFamily, this.routeTag, 
-                IPv4.fromIPv4Address(this.address), 
+                this.addressFamily, this.routeTag,
+                IPv4.fromIPv4Address(this.address),
                 IPv4.fromIPv4Address(this.subnetMask),
                 IPv4.fromIPv4Address(this.nextHopAddress), this.metric);
 	}

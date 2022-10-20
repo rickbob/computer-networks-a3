@@ -179,6 +179,8 @@ public class Router extends Device {
 					routeTable.update(address, gwIp, mask, newDistance, inIface);
 				}
 			}
+
+			System.out.println(routeTable.toString());
 		}
 
 	}

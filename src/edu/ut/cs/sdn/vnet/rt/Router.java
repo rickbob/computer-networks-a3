@@ -64,8 +64,8 @@ public class Router extends Device {
 			routeTable.insert(routerIface.getIpAddress() & routerIface.getSubnetMask(), 0, routerIface.getSubnetMask(), routerIface, 0);
 		}
 
-		Ethernet ripEthernet = buildRIPRequest();
 		for (Iface routeIface : this.interfaces.values()) {
+			Ethernet ripEthernet = buildRIPRequest(routeIface);
 			sendPacket(ripEthernet, routeIface);
 		}
 	}

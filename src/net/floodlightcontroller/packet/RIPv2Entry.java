@@ -31,12 +31,6 @@ public class RIPv2Entry
 
     public RIPv2Entry(RouteEntry routeEntry) {
         this.addressFamily = ADDRESS_FAMILY_IPv4;
-        // if (routeEntry.getGatewayAddress() != 0) {
-        //     this.nextHopAddress = routeEntry.getGatewayAddress();
-        // } else {
-        //     this.nextHopAddress = routeEntry.getInterface().getIpAddress(); // & routeEntry.getInterface().getSubnetMask();
-        // }
-        
         this.address = routeEntry.getDestinationAddress();
         this.subnetMask = routeEntry.getMaskAddress();
         this.metric = routeEntry.getDistance();

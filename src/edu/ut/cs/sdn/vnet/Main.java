@@ -90,7 +90,6 @@ public class Main
 			if (routeTableFile != null)
 			{ router.loadRouteTable(routeTableFile); }
 			else {
-				// TODO: start RIP
 				router.buildRouteTableFromRIP();
 			}
 			

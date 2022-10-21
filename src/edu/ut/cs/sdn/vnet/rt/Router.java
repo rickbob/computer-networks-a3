@@ -149,7 +149,6 @@ public class Router extends Device {
 		IPv4 ipPacket = (IPv4) etherPacket.getPayload();
 		UDP udpPacket = (UDP) ipPacket.getPayload();
 		RIPv2 ripPacket = (RIPv2) udpPacket.getPayload();
-		System.out.println("Got RIP packet");
 
 		if (ripPacket.getCommand() == RIPv2.COMMAND_REQUEST) {
 			// Handle RIP request by sending response
@@ -158,32 +157,21 @@ public class Router extends Device {
 			sendPacket(rip, inIface);
 		} else if (ripPacket.getCommand() == RIPv2.COMMAND_RESPONSE) {
 			// Handle RIP response by updating this router's route table
-			System.out.println("GETTING RIP RESPONSE");
 
 			for (RIPv2Entry ripEntry : ripPacket.getEntries()) {
 				int address = ripEntry.getAddress();
 				int mask = ripEntry.getSubnetMask();
 				int gwIp = ipPacket.getSourceAddress();
-				// if (gwIp == 0) {
-					// gwIp = inIface.getIpAddress();
-				// }
 				int newDistance = ripEntry.getMetric() + 1;
 
-				System.out.println("Address: " + IPv4.fromIPv4Address(address));
-				System.out.println("Mask: " + IPv4.fromIPv4Address(mask));
-				System.out.println("GW: " + IPv4.fromIPv4Address(gwIp));
-				System.out.println("Distance: " + newDistance);
-
+				// update route table
 				RouteEntry curr = routeTable.lookup(address);
 				if (curr == null) {
-					System.out.println("GETTING NEW ROUTETABLE ENTRY");
 					routeTable.insert(address, gwIp, mask, inIface, newDistance);
 				} else if (newDistance <= curr.getDistance()) {
 					routeTable.update(address, gwIp, mask, newDistance, inIface);
 				}
 			}
-
-			System.out.println(routeTable.toString());
 		}
 
 	}
@@ -206,6 +194,7 @@ public class Router extends Device {
 			ArpQueueEntry packets = arpQueue.get(senderIp);
 			if (packets == null)
 				return;
+			// clear queue and send packets
 			while (!packets.isEmpty()) {
 				Ethernet packet = packets.poll().getPacket();
 				packet.setDestinationMACAddress(senderMAC.toBytes());
@@ -287,21 +276,11 @@ public class Router extends Device {
 			if (nextHopQueue == null) {
 				nextHopQueue = new ArpQueueEntry(arpRequest);
 				arpQueue.put(nextHop, nextHopQueue);
-				// for (Iface routerIface : this.interfaces.values()) {
-				// sendPacket(arpRequest, routerIface);
-				// }
 			}
 			nextHopQueue.add(etherPacket, inIface, etherPacket.getSourceMAC());
 			etherPacket.setSourceMACAddress(bestMatch.getInterface().getMacAddress().toBytes());
-
-			// for (Iface routerIface : this.interfaces.values()) {
-			// if (routerIface != inIface)
-			// sendPacket(arpRequest, routerIface);
-			// }
 			return;
 		}
-
-		// Make sure we don't sent a packet back out the interface it came in
 
 		for (Iface routerIface : this.interfaces.values()) {
 			if (routerIface.getIpAddress() == dstAddr) {
@@ -488,10 +467,6 @@ public class Router extends Device {
 
 		RIPv2 rip = new RIPv2();
 		rip.setCommand(RIPv2.COMMAND_REQUEST);
-		// for (RouteEntry routeEntry : routeTable.getRouteEntries()) {
-		// RIPv2Entry riPv2Entry = new RIPv2Entry(routeEntry);
-		// rip.addEntry(riPv2Entry);
-		// }
 
 		ether.setPayload(ip);
 		ip.setPayload(udp);
@@ -556,7 +531,6 @@ public class Router extends Device {
 								packetEntry.getSourceMacAddress());
 						sendPacket(icmpEtherPkt, inIface);
 					}
-					// TODO: do we remove the entry from the table?
 				}
 			}
 		}
@@ -573,7 +547,6 @@ public class Router extends Device {
 
 			for (Iface routerIface : this.interfaces.values()) {
 				Ethernet ether = buildRIPResponse(routerIface, "FF:FF:FF:FF:FF:FF", "224.0.0.9");
-				IPv4 ip = (IPv4) ether.getPayload();
 				ether.setSourceMACAddress(routerIface.getMacAddress().toBytes());
 				sendPacket(ether, routerIface);
 			}

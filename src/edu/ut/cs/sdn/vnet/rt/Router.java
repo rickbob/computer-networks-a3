@@ -65,10 +65,13 @@ public class Router extends Device {
 					routerIface, 0);
 		}
 
+		// Request RIP entries from neighbors
 		for (Iface routeIface : this.interfaces.values()) {
 			Ethernet ripEthernet = buildRIPRequest(routeIface);
 			sendPacket(ripEthernet, routeIface);
 		}
+
+		// Start RIP response sending thread
 		new Thread() {
 			public void run() {
 				runRIPResponse();
@@ -128,6 +131,7 @@ public class Router extends Device {
 		switch (etherPacket.getEtherType()) {
 			case Ethernet.TYPE_IPv4:
 				IPv4 ipPacket = (IPv4) etherPacket.getPayload();
+				// Check if RIP packet
 				if (ipPacket.getProtocol() == IPv4.PROTOCOL_UDP) {
 					UDP udpPacket = (UDP) ipPacket.getPayload();
 					if (udpPacket.getDestinationPort() == UDP.RIP_PORT) {
@@ -545,6 +549,7 @@ public class Router extends Device {
 				break;
 			}
 
+			// Send unsolicited RIP responses
 			for (Iface routerIface : this.interfaces.values()) {
 				Ethernet ether = buildRIPResponse(routerIface, "FF:FF:FF:FF:FF:FF", "224.0.0.9");
 				ether.setSourceMACAddress(routerIface.getMacAddress().toBytes());
